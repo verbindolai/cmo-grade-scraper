@@ -23,7 +23,7 @@ function run () {
             await page.waitForSelector('#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:expandAll2')
             await page.click('#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:expandAll2')
 
-            await page.waitForSelector('.treeTableCellLevel4')
+            await page.waitForSelector('.treeTableCellLevel5')
             let elements = await page.evaluate(() => {
                 return document.querySelectorAll('.treeTableCellLevel5');
             })
