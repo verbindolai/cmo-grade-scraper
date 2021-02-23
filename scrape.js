@@ -1,18 +1,30 @@
 const puppeteer = require('puppeteer');
 const url = "https://cmo.ostfalia.de/qisserver/pages/cs/sys/portal/hisinoneStartPage.faces?chco=y";
+
+const fs = require('fs');
+let rawdata = fs.readFileSync('cred.json');
+
+const login = JSON.parse(rawdata)
+
 function run () {
     return new Promise(async (resolve, reject) => {
         try {
             const browser = await puppeteer.launch();
             const page = await browser.newPage();
+            await page.exposeFunction("getLogin", function() {
+                return login;
+            });
             console.log("Start scraping...")
             await page.goto(url);
             await page.waitForSelector('input[name=asdf]');
-            await page.$eval('input[id="asdf"]', el => {
-                el.value = 'ID';
+            let test = await page.$eval('input[id="asdf"]', async (el) => {
+                let login = await getLogin()
+                el.value = login.id;
             });
-            await page.$eval('input[id="fdsa"]', el => {
-                el.value = 'PASSWORD';
+
+            await page.$eval('input[id="fdsa"]', async (el) => {
+                let login = await getLogin();
+                el.value = login.passw;
             });
             await page.click('button[name="submit"]');
             await page.waitForSelector('#repeat\\:1\\:notSelectedLink1');
