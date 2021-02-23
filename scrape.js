@@ -23,29 +23,40 @@ function run () {
             await page.waitForSelector('#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:expandAll2')
             await page.click('#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:expandAll2')
 
-            await page.waitForSelector('.treeTableCellLevel5')
+            await page.waitForSelector('.treeTableCellLevel4')
             let elements = await page.evaluate(() => {
-                return document.querySelectorAll('.treeTableCellLevel5');
+                return document.querySelectorAll('.treeTableCellLevel4');
             })
             const data = [];
             let i = 0;
             for(let element in elements){
-
-                let name = await page.$eval(`#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:${i}\\:0\\:unDeftxt`, (element) => {
-                    return element.innerHTML
-                })
-                let credits = await page.$eval(`#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:${i}\\:0\\:bonus`, (element) => {
-                    return element.innerHTML
-                })
-                let grade = await page.$eval(`#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:${i}\\:0\\:grade`, (element) => {
-                    return element.innerHTML
-                })
-                let attempts = await page.$eval(`#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:${i}\\:0\\:attempt`, (element) => {
-                    return element.innerHTML
-                })
-                //console.log(`Name: ${name}; Credits: ${credits}; Grade: ${grade}; Attempts: ${attempts}`)
-                const module = {name:name, credits: parseInt(credits), grade: parseFloat(grade), attempts: parseInt(attempts)};
-                data.push(module)
+                let counter = 0;
+                while (true){
+                    try{
+                        await page.$eval(`#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:${i}\\:${counter}\\:unDeftxt`, (element) => {
+                        })
+                        counter++;
+                    }catch (e){
+                        break;
+                    }
+                }
+                for (let j = 0; j < counter; j++){
+                    let name = await page.$eval(`#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:${i}\\:${j}\\:unDeftxt`, (element) => {
+                        return element.innerHTML
+                    })
+                    let credits = await page.$eval(`#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:${i}\\:${j}\\:bonus`, (element) => {
+                        return element.innerHTML
+                    })
+                    let grade = await page.$eval(`#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:${i}\\:${j}\\:grade`, (element) => {
+                        return element.innerHTML
+                    })
+                    let attempts = await page.$eval(`#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:${i}\\:${j}\\:attempt`, (element) => {
+                        return element.innerHTML
+                    })
+                    //console.log(`Name: ${name}; Credits: ${credits}; Grade: ${grade}; Attempts: ${attempts}`)
+                    const module = {name:name, credits: parseInt(credits), grade: parseFloat(grade), attempts: parseInt(attempts)};
+                    data.push(module)
+                }
                 i++;
             }
             browser.close();
@@ -60,11 +71,15 @@ function run () {
 run().then((result) => {
     let allCredits = 0;
     let creditGrade = 0;
+    let allAttempts = 0;
     for (let modul of result){
         console.log(modul)
         allCredits += modul.credits;
         creditGrade += modul.grade * modul.credits;
+        allAttempts += modul.attempts;
     }
     let average = creditGrade / allCredits;
-    console.log("The Average Grade is: " + average)
+    console.log("Overall Credits: " + allCredits)
+    console.log("Average Attempts: " + allAttempts / result.length)
+    console.log("Average Grade: " + average)
 }).catch(console.error);
