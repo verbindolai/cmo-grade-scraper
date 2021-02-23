@@ -20,26 +20,27 @@ function run () {
 
             await page.goto("https://cmo.ostfalia.de/qisserver/pages/sul/examAssessment/personExamsReadonly.xhtml?_flowId=examsOverviewForPerson-flow&_flowExecutionKey=e1s1")
 
-            await page.waitForSelector('#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:t2g_0-0-0-0')
-            await page.click('#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:t2g_0-0-0-0');
+            await page.waitForSelector('#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:expandAll2')
+            await page.click('#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:expandAll2')
 
             await page.waitForSelector('.treeTableCellLevel4')
             let elements = await page.evaluate(() => {
-                return document.querySelectorAll('.treeTableCellLevel4');
+                return document.querySelectorAll('.treeTableCellLevel5');
             })
             const data = [];
             let i = 0;
             for(let element in elements){
-                let name = await page.$eval(`#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:${i}\\:unDeftxt`, (element) => {
+
+                let name = await page.$eval(`#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:${i}\\:0\\:unDeftxt`, (element) => {
                     return element.innerHTML
                 })
-                let credits = await page.$eval(`#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:${i}\\:bonus`, (element) => {
+                let credits = await page.$eval(`#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:${i}\\:0\\:bonus`, (element) => {
                     return element.innerHTML
                 })
-                let grade = await page.$eval(`#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:${i}\\:grade`, (element) => {
+                let grade = await page.$eval(`#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:${i}\\:0\\:grade`, (element) => {
                     return element.innerHTML
                 })
-                let attempts = await page.$eval(`#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:${i}\\:attempt`, (element) => {
+                let attempts = await page.$eval(`#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:${i}\\:0\\:attempt`, (element) => {
                     return element.innerHTML
                 })
                 //console.log(`Name: ${name}; Credits: ${credits}; Grade: ${grade}; Attempts: ${attempts}`)
