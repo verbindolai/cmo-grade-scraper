@@ -1,4 +1,4 @@
 node_modules
 parse.js
-
 cred.json
+./cred.json

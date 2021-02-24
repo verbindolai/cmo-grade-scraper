@@ -7,17 +7,19 @@ let rawdata = fs.readFileSync('cred.json');
 const login = JSON.parse(rawdata)
 
 function run () {
-    return new Promise(async (resolve, reject) => {
+    return new Promise( async (resolve, reject) => {
         try {
+
             const browser = await puppeteer.launch();
             const page = await browser.newPage();
+
             await page.exposeFunction("getLogin", function() {
                 return login;
             });
             console.log("Start scraping...")
             await page.goto(url);
             await page.waitForSelector('input[name=asdf]');
-            let test = await page.$eval('input[id="asdf"]', async (el) => {
+            await page.$eval('input[id="asdf"]', async (el) => {
                 let login = await getLogin()
                 el.value = login.id;
             });
@@ -43,7 +45,7 @@ function run () {
             let i = 0;
             for(let element in elements){
                 let counter = 0;
-                while (true){
+                while (true){ //this is awful but works for now
                     try{
                         await page.$eval(`#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:${i}\\:${counter}\\:unDeftxt`, (element) => {
                         })
@@ -54,19 +56,29 @@ function run () {
                 }
                 for (let j = 0; j < counter; j++){
                     let name = await page.$eval(`#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:${i}\\:${j}\\:unDeftxt`, (element) => {
-                        return element.innerHTML
+                        return element.innerHTML;
                     })
                     let credits = await page.$eval(`#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:${i}\\:${j}\\:bonus`, (element) => {
-                        return element.innerHTML
+                        return parseInt(element.innerHTML);
                     })
                     let grade = await page.$eval(`#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:${i}\\:${j}\\:grade`, (element) => {
-                        return element.innerHTML
+                        return parseFloat(element.innerHTML);
                     })
                     let attempts = await page.$eval(`#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:${i}\\:${j}\\:attempt`, (element) => {
-                        return element.innerHTML
+                        return parseInt(element.innerHTML);
                     })
+
+                    if (grade == NaN){
+                        grade = 1.0;
+                    }
+                    if (credits == NaN){
+                        credits = 5;
+                    }
+                    if (attempts == NaN){
+                        attempts = 1;
+                    }
                     //console.log(`Name: ${name}; Credits: ${credits}; Grade: ${grade}; Attempts: ${attempts}`)
-                    const module = {name:name, credits: parseInt(credits), grade: parseFloat(grade), attempts: parseInt(attempts)};
+                    const module = {name:name, credits: credits, grade: grade, attempts: attempts};
                     data.push(module)
                 }
                 i++;
