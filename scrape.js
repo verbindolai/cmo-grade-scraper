@@ -1,10 +1,14 @@
 const puppeteer = require('puppeteer');
 const url = "https://cmo.ostfalia.de/qisserver/pages/cs/sys/portal/hisinoneStartPage.faces?chco=y";
+const log = {id: "", passw: ""}
+const readline = require("readline");
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+rl.stdoutMuted = true;
 
-const fs = require('fs');
-let rawdata = fs.readFileSync('cred.json');
 
-const login = JSON.parse(rawdata)
 
 function run () {
     return new Promise( async (resolve, reject) => {
@@ -14,7 +18,7 @@ function run () {
             const page = await browser.newPage();
 
             await page.exposeFunction("getLogin", function() {
-                return login;
+                return log;
             });
             console.log("Start scraping...")
             await page.goto(url);
@@ -27,6 +31,7 @@ function run () {
             await page.$eval('input[id="fdsa"]', async (el) => {
                 let login = await getLogin();
                 el.value = login.passw;
+
             });
             await page.click('button[name="submit"]');
             await page.waitForSelector('#repeat\\:1\\:notSelectedLink1');
@@ -92,18 +97,28 @@ function run () {
         }
     })
 }
-run().then((result) => {
-    let allCredits = 0;
-    let creditGrade = 0;
-    let allAttempts = 0;
-    for (let modul of result){
-        console.log(modul)
-        allCredits += modul.credits;
-        creditGrade += modul.grade * modul.credits;
-        allAttempts += modul.attempts;
-    }
-    let average = creditGrade / allCredits;
-    console.log("Overall Credits: " + allCredits)
-    console.log("Average Attempts: " + allAttempts / result.length)
-    console.log("Average Grade: " + average)
-}).catch(console.error);
+
+rl.question("Username: ", (name)=> {
+    log.id = name;
+    rl.question("Password: ", (pass) => {
+        log.passw = pass;
+        run().then((result) => {
+            let allCredits = 0;
+            let creditGrade = 0;
+            let allAttempts = 0;
+            for (let modul of result){
+                console.log(modul)
+                allCredits += modul.credits;
+                creditGrade += modul.grade * modul.credits;
+                allAttempts += modul.attempts;
+            }
+            let average = creditGrade / allCredits;
+            console.log("Overall Credits: " + allCredits)
+            console.log("Average Attempts: " + allAttempts / result.length)
+            console.log("Average Grade: " + average)
+        }).catch(console.error);
+    })
+})
+
+
+
