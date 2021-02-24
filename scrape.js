@@ -59,7 +59,7 @@ function run () {
                         return element.innerHTML;
                     })
                     let credits = await page.$eval(`#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:${i}\\:${j}\\:bonus`, (element) => {
-                        return parseInt(element.innerHTML);
+                        return parseFloat(element.innerHTML);
                     })
                     let grade = await page.$eval(`#examsReadonly\\:overviewAsTreeReadonly\\:tree\\:ExamOverviewForPersonTreeReadonly\\:0\\:0\\:0\\:0\\:${i}\\:${j}\\:grade`, (element) => {
                         return parseFloat(element.innerHTML);
@@ -68,13 +68,13 @@ function run () {
                         return parseInt(element.innerHTML);
                     })
 
-                    if (grade == NaN){
+                    if (isNaN(grade)){
                         grade = 1.0;
                     }
-                    if (credits == NaN){
+                    if (isNaN(credits)){
                         credits = 5;
                     }
-                    if (attempts == NaN){
+                    if (isNaN(attempts)){
                         attempts = 1;
                     }
                     //console.log(`Name: ${name}; Credits: ${credits}; Grade: ${grade}; Attempts: ${attempts}`)
