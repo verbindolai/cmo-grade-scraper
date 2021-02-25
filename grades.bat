@@ -1,3 +1,3 @@
-cd "PATH-TO-FOlDER"
+cd "PATH-TO-FOLDER"
 call npm start
 pause
