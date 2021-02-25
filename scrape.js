@@ -20,7 +20,7 @@ function run () {
             await page.exposeFunction("getLogin", function() {
                 return log;
             });
-            console.log("Start scraping...")
+            console.log("\nStart scraping...")
             await page.goto(url);
             await page.waitForSelector('input[name=asdf]');
             await page.$eval('input[id="asdf"]', async (el) => {
@@ -88,9 +88,8 @@ function run () {
                 }
                 i++;
             }
-            browser.close();
+            await browser.close();
             console.log("Finished scraping.")
-
             return resolve(data);
         } catch (e) {
             return reject(e);
@@ -98,27 +97,55 @@ function run () {
     })
 }
 
-rl.question("Username: ", (name)=> {
-    log.id = name;
-    rl.question("Password: ", (pass) => {
-        log.passw = pass;
-        run().then((result) => {
-            let allCredits = 0;
-            let creditGrade = 0;
-            let allAttempts = 0;
-            for (let modul of result){
-                console.log(modul)
-                allCredits += modul.credits;
-                creditGrade += modul.grade * modul.credits;
-                allAttempts += modul.attempts;
-            }
-            let average = creditGrade / allCredits;
-            console.log("Overall Credits: " + allCredits)
-            console.log("Average Attempts: " + allAttempts / result.length)
-            console.log("Average Grade: " + average)
-        }).catch(console.error);
+function askUsername(){
+    return new Promise((resolve, reject) => {
+        rl.query = "Username: "
+        rl.question(rl.query, function (username){
+            log.id = username;
+            return resolve();
+        })
     })
-})
+}
+
+
+function askPassword(){
+    return new Promise((resolve, reject) => {
+        rl.query = "Password: ";
+        rl.question(rl.query, function(password) {
+            log.passw = password;
+            rl.close();
+            return resolve();
+        });
+
+        //Stack overflow https://stackoverflow.com/questions/24037545/how-to-hide-password-in-the-nodejs-console
+        rl._writeToOutput = function _writeToOutput(stringToWrite) {
+            if (rl.stdoutMuted)
+                rl.output.write("*");
+            else
+                rl.output.write(stringToWrite);
+        };
+    })
+}
+
+askUsername()
+    .then(() => askPassword())
+    .then(() => run())
+    .then((result) => {
+        let allCredits = 0;
+        let creditGrade = 0;
+        let allAttempts = 0;
+        for (let modul of result){
+            console.log(modul)
+            allCredits += modul.credits;
+            creditGrade += modul.grade * modul.credits;
+            allAttempts += modul.attempts;
+        }
+        let average = creditGrade / allCredits;
+        console.log("Overall Credits: " + allCredits)
+        console.log("Average Attempts: " + allAttempts / result.length)
+        console.log("Average Grade: " + average)
+    })
+    .catch(console.error);
 
 
 
