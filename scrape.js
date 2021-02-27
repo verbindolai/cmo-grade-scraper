@@ -1,14 +1,27 @@
+const { writeFile } = require('fs');
 const puppeteer = require('puppeteer');
+const readline = require("readline");
+const fs = require('fs')
+
 const url = "https://cmo.ostfalia.de/qisserver/pages/cs/sys/portal/hisinoneStartPage.faces?chco=y";
 const log = {id: "", passw: ""}
-const readline = require("readline");
 const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
 });
 rl.stdoutMuted = true;
 
+let loginNeeded;
 
+try{
+    loginNeeded = JSON.parse(fs.readFileSync('config.json')).login
+}catch (e){
+    loginNeeded = true;
+    const login = {login:true}
+    fs.writeFileSync('config.json', JSON.stringify(login))
+}
+const xlsx = require("xlsx");
+const grades = [];
 
 function run () {
     return new Promise( async (resolve, reject) => {
@@ -46,7 +59,7 @@ function run () {
             let elements = await page.evaluate(() => {
                 return document.querySelectorAll('.treeTableCellLevel4');
             })
-            const data = [];
+
             let i = 0;
             for(let element in elements){
                 let counter = 0;
@@ -83,69 +96,148 @@ function run () {
                         attempts = 1;
                     }
                     //console.log(`Name: ${name}; Credits: ${credits}; Grade: ${grade}; Attempts: ${attempts}`)
-                    const module = {name:name, credits: credits, grade: grade, attempts: attempts};
-                    data.push(module)
+
+                    //const nameJson = await name.json();
+
+                    //
+                    const cmoModule = {name:name, credits: credits, grade: grade, attempts: attempts};
+                    grades.push(cmoModule)
                 }
                 i++;
             }
             await browser.close();
             console.log("Finished scraping.")
-            return resolve(data);
+            return resolve(grades);
         } catch (e) {
             return reject(e);
         }
     })
 }
 
+let allCredits = 0;
+let creditGrade = 0;
+let allAttempts = 0;
+let average = 0;
+
+
+function start(){
+    if (loginNeeded) {
+        login()
+            .then(()=> run())
+            .then((result) => console.log(result))
+            .catch((error)=>console.log(error))
+            .finally(() => rl.close())
+
+    } else {
+        readCreds()
+            .then(() => run())
+            .then((result) => processResult(result))
+            .catch((error)=>console.log(error))
+            .finally(() => rl.close())
+    }
+}
+
+function readCreds(){
+    return new Promise(((resolve, reject) => {
+        try{
+            let rawdata = fs.readFileSync('creds.json');
+            let creds = JSON.parse(rawdata);
+            log.passw = creds.passw;
+            log.id = creds.id;
+            return resolve();
+        } catch (e){
+            const login = {login:true}
+            fs.writeFileSync('config.json', JSON.stringify(login))
+            console.error("Config was resettet. Please restart.")
+            return reject(e);
+        }
+    }));
+}
+
+function login(){
+    return askUsername().then(() => askPassword()).then(()=> safeCreds());
+}
+
 function askUsername(){
     return new Promise((resolve, reject) => {
-        rl.query = "Username: "
-        rl.question(rl.query, function (username){
-            log.id = username;
-            return resolve();
-        })
+        try{
+            rl.query = "Username: "
+            rl.question(rl.query, function (username){
+                log.id = username;
+                return resolve();
+            })
+        }catch (e) {
+            return reject(e);
+        }
     })
 }
 
 
 function askPassword(){
     return new Promise((resolve, reject) => {
-        rl.query = "Password: ";
-        rl.question(rl.query, function(password) {
-            log.passw = password;
-            rl.close();
-            return resolve();
-        });
+        try{
+            rl.query = "Password: ";
+            rl.question(rl.query, function(password) {
+                log.passw = password;
+                return resolve();
+            });
+        }catch (e) {
+            return reject(e);
+        }
 
-        //Stack overflow https://stackoverflow.com/questions/24037545/how-to-hide-password-in-the-nodejs-console
-        rl._writeToOutput = function _writeToOutput(stringToWrite) {
-            if (rl.stdoutMuted)
-                rl.output.write("*");
-            else
-                rl.output.write(stringToWrite);
-        };
+    });
+}
+
+function safeCreds(){
+    return new Promise((resolve, reject) => {
+        try{
+            rl.query = "Safe Login to JSON-File? (y/n)\n"
+            rl.question(rl.query, function (answer){
+                if (answer === "yes" || answer === "y"){
+                    const login = {login:false}
+                    fs.writeFileSync("creds.json", JSON.stringify(log));
+                    fs.writeFileSync("config.json", JSON.stringify(login))
+                    console.log("saved")
+                }
+                return resolve();
+            });
+        } catch (e) {
+            return reject(e);
+        }
     })
 }
 
-askUsername()
-    .then(() => askPassword())
-    .then(() => run())
-    .then((result) => {
-        let allCredits = 0;
-        let creditGrade = 0;
-        let allAttempts = 0;
-        for (let modul of result){
-            console.log(modul)
-            allCredits += modul.credits;
-            creditGrade += modul.grade * modul.credits;
-            allAttempts += modul.attempts;
-        }
-        let average = creditGrade / allCredits;
-        console.log("Overall Credits: " + allCredits)
-        console.log("Average Attempts: " + allAttempts / result.length)
-        console.log("Average Grade: " + average)
-    })
-    .catch(console.error);
+function processResult(result){
+    for (let modul of result){
+        console.log(modul)
+        allCredits += modul.credits;
+        creditGrade += modul.grade * modul.credits;
+        allAttempts += modul.attempts;
+    }
+    average = creditGrade / allCredits;
+    console.log("Overall Credits: " + allCredits)
+    console.log("Average Attempts: " + allAttempts / result.length)
+    console.log("Average Grade: " + average)
+    createExcelSheet(result)
+}
 
+function createExcelSheet(result){
+    const moduleArr = [5, 7, 7, 4, 4, 1];
+    let counter = 0;
+    const newWB = xlsx.utils.book_new();
+    let newWS;
+    for(let i = 1;i <= 6;i++){
+        let newData = grades.slice(counter, counter + moduleArr[i-1]);
+        counter += moduleArr[i-1];
+        newWS = xlsx.utils.json_to_sheet(newData);
+        xlsx.utils.book_append_sheet(newWB, newWS, `${i}. Semester`);
+    }
+    const allArray = []
+    const moduleAll = {OverallCredits:allCredits, AverageAttempts:allAttempts / result.length, AverageGrade:average};
+    allArray.push(moduleAll);
 
-
+    xlsx.utils.book_append_sheet(newWB, xlsx.utils.json_to_sheet(allArray), "Gesamt");
+    xlsx.writeFile(newWB, "grades.xlsx");
+    process.exit(0);
+}
+start();
