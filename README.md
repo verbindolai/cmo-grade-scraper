@@ -1,5 +1,5 @@
 # cmo-grade-scraper
-Scraper using puppeteer to get the grades of your modules.
+Hacky scraper using puppeteer to get the grades of your modules.
 
 NodeJS is required.
 
